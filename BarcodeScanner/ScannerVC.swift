@@ -1,0 +1,75 @@
+//
+//  ScannerVC.swift
+//  BarcodeScanner
+//
+//  Created by Giovanni Maya on 3/8/24.
+//
+
+import Foundation
+import AVFoundation
+import UIKit
+
+
+protocol ScannerVCDelegate: class {
+    // list of commands for this delegate
+    
+    func didFind(barcode: String)
+}
+
+final class ScannerVC: UIViewController {
+    /*
+     UIKit communicates via delegates & protocols
+     
+     System:
+     
+     UIKit Controller --> Coordinator --> SwiftUI View
+     */
+    
+    
+    let captureSession = AVCaptureSession()
+    var previewLayer = AVCaptureVideoPreviewLayer()
+    weak var scannerDelegate: ScannerVCDelegate?
+    init(scannerDelegate: ScannerVCDelegate){
+        super.init(nibName: nil, bundle: nil)
+        self.scannerDelegate = scannerDelegate
+    }
+    
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented")}
+    
+    
+    private func setupCaptureSession(){
+        guard let videoCaptureDevice = AVCaptureDevice.default(for: .video) else {
+            return
+        }
+        let videoInput: AVCaptureDeviceInput
+        
+        do {
+            try videoInput = AVCaptureDeviceInput(device: videoCaptureDevice)
+        } catch {
+            return
+        }
+        
+        if captureSession.canAddInput(videoInput){
+            captureSession.addInput(videoInput)
+        } else {
+            return
+        }
+        
+        let metaDataOutput = AVCaptureMetadataOutput()
+        
+        if captureSession.canAddOutput(metaDataOutput){
+            captureSession.addOutput(metaDataOutput)
+            metaDataOutput.setMetadataObjectsDelegate(self, queue: DispatchQueue.main)
+            metaDataOutput.metadataObjectTypes = [.ean8, .ean13]
+        } else {
+            return
+        }
+            
+    }
+
+}
+
+
+extension ScannerVC: AVCaptureMetadataOutputObjectsDelegate{
+    
+}
